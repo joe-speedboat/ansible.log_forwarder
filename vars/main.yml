@@ -1,0 +1,36 @@
+---
+# Windows internal paths (computed)
+winlogbeat_extract_folder: 'winlogbeat-{{ winlogbeat_version }}-windows-x86_64'
+winlogbeat_install_path: '{{ winlogbeat_install_root }}\current'
+winlogbeat_binary: '{{ winlogbeat_install_path }}\winlogbeat.exe'
+winlogbeat_config: '{{ winlogbeat_install_path }}\winlogbeat.yml'
+winlogbeat_backup_path: '{{ winlogbeat_install_root }}\backup'
+
+# Linux package and service maps
+pkg_rhel_fluent_bit:
+  - fluent-bit
+
+pkg_debian_fluent_bit:
+  - fluent-bit
+
+pkg_rhel_log_forwarder_audit:
+  - audit
+
+pkg_debian_log_forwarder_audit:
+  - auditd
+
+pkg_debian_repository_dependencies:
+  - ca-certificates
+  - curl
+  - gnupg
+
+svc_fluent_bit: fluent-bit
+svc_audit:
+  RedHat: auditd
+  Debian: auditd
+
+fluent_bit_rpm_repo_family_map:
+  Rocky: rockylinux
+  AlmaLinux: almalinux
+  RedHat: rockylinux
+...

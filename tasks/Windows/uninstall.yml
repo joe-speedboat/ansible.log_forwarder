@@ -1,0 +1,31 @@
+---
+- name: Stop Winlogbeat service
+  ansible.windows.win_service:
+    name: winlogbeat
+    state: stopped
+    start_mode: disabled
+  ignore_errors: true
+
+- name: Run Winlogbeat uninstall script
+  ansible.windows.win_shell: |
+    & "{{ winlogbeat_install_path }}\uninstall-service-winlogbeat.ps1"
+  args:
+    chdir: "{{ winlogbeat_install_path }}"
+  ignore_errors: true
+
+- name: Remove Winlogbeat installation directories
+  ansible.windows.win_file:
+    path: "{{ item }}"
+    state: absent
+  loop:
+    - "{{ winlogbeat_install_root }}"
+    - "{{ winlogbeat_data_dir }}"
+    - "{{ winlogbeat_log_dir }}"
+    - "{{ winlogbeat_download_dir }}"
+
+- name: Remove Winlogbeat backup directory
+  ansible.windows.win_file:
+    path: "{{ winlogbeat_backup_path }}"
+    state: absent
+  ignore_errors: true
+...

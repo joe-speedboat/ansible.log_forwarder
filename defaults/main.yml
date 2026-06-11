@@ -1,0 +1,74 @@
+---
+# ██ Winlogbeat version — pinned to second-to-last 7.x release for clean upgrade testing
+# Graylog supports Winlogbeat 7.x only (NOT 8.x+).
+winlogbeat_version: '7.17.28'
+winlogbeat_download_url: "https://artifacts.elastic.co/downloads/beats/winlogbeat/winlogbeat-{{ winlogbeat_version }}-windows-x86_64.zip"
+winlogbeat_checksum:
+  '7.17.28': '0305cb51f27800af4df1d0120fd7de0487f42588f15cde44a311e52a48aec83f6037753db251944e32caab08a81361c1c444de440d302d081ebf6dcda4e26041'
+  '7.17.29': '14e50860130de17711142e5b12a4da2f9e9dd714d45dc3f16e94437264164424be1e5d01007e20ef14762b1adfb8c68abd3f2c76d339f29ba9e1fbe014a3fafd'
+
+# ██ Installation paths (Windows)
+winlogbeat_install_root: 'C:\Program Files\Winlogbeat'
+winlogbeat_data_dir: 'C:\ProgramData\Winlogbeat'
+winlogbeat_log_dir: 'C:\ProgramData\Winlogbeat\Logs'
+winlogbeat_download_dir: 'C:\Windows\Temp\winlogbeat'
+
+# ██ Graylog Beats input (Windows)
+winlogbeat_graylog_host: graylog.example.com
+winlogbeat_graylog_port: 5044
+
+# ██ Event log channels (Windows) — all events, no filter
+winlogbeat_event_logs:
+  - name: Application
+  - name: System
+  - name: Security
+
+# ██ Collector identity
+winlogbeat_node_name: "{{ inventory_hostname }}"
+
+# ██ Service management (Windows)
+winlogbeat_service_name: winlogbeat
+winlogbeat_service_state: started
+winlogbeat_service_enabled: true
+winlogbeat_retention_versions: 3
+
+# ██ Extra tags and fields (Windows)
+winlogbeat_tags: []
+# winlogbeat_fields:
+#   env: production
+#   datacenter: ch-flawil
+
+# ██ Linux logging via Fluent Bit → Graylog GELF
+log_forwarder_linux_install: true
+log_forwarder_remove_repo: true  # remove Fluent Bit repo on uninstall
+
+# Graylog GELF input (Linux)
+log_forwarder_graylog_gelf_host: graylog.example.com
+log_forwarder_graylog_gelf_port: 12201
+log_forwarder_graylog_gelf_mode: tcp
+
+# Fluent Bit runtime
+log_forwarder_fluent_bit_workers: 2
+log_forwarder_journal_tag: journald
+log_forwarder_read_from_tail: true
+log_forwarder_storage_path: /var/lib/fluent-bit
+log_forwarder_systemd_db: "{{ log_forwarder_storage_path }}/flb_systemd.db"
+
+# Audit log forwarding (Linux)
+log_forwarder_audit_enabled: true
+log_forwarder_audit_remove: true  # remove audit packages on uninstall
+log_forwarder_audit_tag: audit
+log_forwarder_audit_db: "{{ log_forwarder_storage_path }}/flb_audit.db"
+log_forwarder_audit_rules_file: /etc/audit/rules.d/logbeat-package.rules
+
+# Additional Linux security/application log files
+log_forwarder_security_files_enabled: true
+log_forwarder_security_files_tag: security_files
+log_forwarder_security_files_db: "{{ log_forwarder_storage_path }}/flb_security_files.db"
+log_forwarder_security_log_paths:
+  - /var/log/auth.log
+  - /var/log/secure
+  - /var/log/nginx/*.log
+  - /var/log/apache2/*.log
+  - /var/log/httpd/*.log
+...

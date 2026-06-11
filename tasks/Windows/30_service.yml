@@ -1,0 +1,9 @@
+---
+# Windows/30_service.yml — enforce Winlogbeat service state
+
+- name: Ensure Winlogbeat service is running
+  ansible.windows.win_service:
+    name: '{{ winlogbeat_service_name }}'
+    state: '{{ winlogbeat_service_state }}'
+    start_mode: "{{ 'auto' if winlogbeat_service_enabled else 'manual' }}"
+...

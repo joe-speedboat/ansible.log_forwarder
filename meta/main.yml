@@ -1,0 +1,33 @@
+---
+galaxy_info:
+  role_name: log_forwarder
+  namespace: joe-speedboat
+  author: Joe Speedboat
+  description: Forward Windows Event Logs and Linux journald/audit/security logs to Graylog
+  company: Bitbull Open Source
+  license: MIT
+  min_ansible_version: '2.14'
+  platforms:
+    - name: Windows
+      versions:
+        - '2022'
+        - '2025'
+    - name: Ubuntu
+      versions:
+        - all
+    - name: EL
+      versions:
+        - '8'
+        - '9'
+        - '10'
+  galaxy_tags:
+    - windows
+    - winlogbeat
+    - eventlog
+    - logging
+    - beats
+    - fluentbit
+    - journald
+    - auditd
+
+dependencies: []

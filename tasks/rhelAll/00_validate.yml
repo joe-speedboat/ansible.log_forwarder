@@ -1,0 +1,11 @@
+---
+- name: Validate Linux Graylog GELF variables
+  ansible.builtin.assert:
+    that:
+      - log_forwarder_graylog_gelf_host is defined
+      - log_forwarder_graylog_gelf_host | length > 0
+      - log_forwarder_graylog_gelf_port is defined
+      - log_forwarder_graylog_gelf_mode in ['tcp', 'udp']
+    fail_msg: "Mandatory Linux variables log_forwarder_graylog_gelf_host, log_forwarder_graylog_gelf_port and log_forwarder_graylog_gelf_mode must be valid"
+  when: log_forwarder_linux_install | bool
+...

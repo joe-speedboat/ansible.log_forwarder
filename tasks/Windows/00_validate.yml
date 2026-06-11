@@ -1,0 +1,25 @@
+---
+# Windows/00_validate.yml — runtime validation for Windows targets
+
+- name: Assert required variables are set
+  ansible.builtin.assert:
+    that:
+      - winlogbeat_graylog_host is defined
+      - winlogbeat_graylog_host | length > 0
+      - winlogbeat_graylog_port is defined
+      - winlogbeat_graylog_port is number
+      - winlogbeat_version is defined
+    fail_msg: >
+      Missing required variable(s):
+      winlogbeat_graylog_host (Graylog server address),
+      winlogbeat_graylog_port (Graylog Beats port, default 5044),
+      winlogbeat_version (Winlogbeat release version)
+
+- name: Assert supported Windows release
+  ansible.builtin.assert:
+    that:
+      - ansible_distribution_version is version('10.0.20348', '>=')
+    fail_msg: >
+      This role requires Windows Server 2022 or newer.
+      Detected: {{ ansible_os_name }} {{ ansible_distribution_version }}
+...

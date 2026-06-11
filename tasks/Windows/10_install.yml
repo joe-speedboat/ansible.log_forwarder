@@ -1,0 +1,163 @@
+---
+# Windows/10_install.yml — Download, extract, install/upgrade Winlogbeat
+# (imported by shared/10_install.yml on Windows targets)
+
+- name: Check currently installed version
+  ansible.windows.win_stat:
+    path: '{{ winlogbeat_binary }}'
+  register: _wb_current_binary
+
+- name: Detect installed version from binary (file version)
+  ansible.windows.win_shell: |
+    (Get-ItemProperty "{{ winlogbeat_binary }}").VersionInfo.ProductVersion
+  register: _wb_installed_version
+  when: _wb_current_binary.stat.exists
+  changed_when: false
+
+- name: Set fact — installed version
+  ansible.builtin.set_fact:
+    _winlogbeat_installed: "{{ (_wb_installed_version.stdout | default('0.0.0')).strip() }}"
+
+- name: Ensure download directory exists
+  ansible.windows.win_file:
+    path: '{{ winlogbeat_download_dir }}'
+    state: directory
+
+- name: Download Winlogbeat ZIP
+  ansible.windows.win_get_url:
+    url: '{{ winlogbeat_download_url }}'
+    dest: '{{ winlogbeat_download_dir }}\winlogbeat-{{ winlogbeat_version }}.zip'
+    checksum: "{{ winlogbeat_checksum[winlogbeat_version] | default('') }}"
+    checksum_algorithm: sha512
+  register: _wb_download
+  until: _wb_download is success
+  retries: 3
+  delay: 5
+
+- name: Extract Winlogbeat ZIP
+  community.windows.win_unzip:
+    src: '{{ winlogbeat_download_dir }}\winlogbeat-{{ winlogbeat_version }}.zip'
+    dest: '{{ winlogbeat_install_root }}'
+    creates: '{{ winlogbeat_install_root }}\{{ winlogbeat_extract_folder }}\winlogbeat.exe'
+
+- name: Ensure data and log directories exist
+  ansible.windows.win_file:
+    path: '{{ item }}'
+    state: directory
+  loop:
+    - '{{ winlogbeat_data_dir }}'
+    - '{{ winlogbeat_log_dir }}'
+
+- name: Check if Winlogbeat service exists
+  ansible.windows.win_service_info:
+    name: '{{ winlogbeat_service_name }}'
+  register: _wb_service_info
+  ignore_errors: true
+
+- name: Stop Winlogbeat service before upgrade
+  ansible.windows.win_service:
+    name: '{{ winlogbeat_service_name }}'
+    state: stopped
+  when:
+    - _wb_current_binary.stat.exists
+    - _winlogbeat_installed != winlogbeat_version
+    - _wb_service_info.services | length > 0
+  register: _wb_stopped
+
+- name: Backup existing installation
+  ansible.windows.win_copy:
+    src: '{{ winlogbeat_install_path }}\'
+    dest: '{{ winlogbeat_backup_path }}\{{ _winlogbeat_installed }}\'
+    remote_src: true
+  when:
+    - _wb_current_binary.stat.exists
+    - _winlogbeat_installed != winlogbeat_version
+
+- name: Remove old junction (directory symlink)
+  ansible.windows.win_file:
+    path: '{{ winlogbeat_install_path }}'
+    state: absent
+  when:
+    - _wb_current_binary.stat.exists
+    - _winlogbeat_installed != winlogbeat_version
+
+- name: Create junction from versioned folder to 'current'
+  ansible.windows.win_shell: |
+    $target = '{{ winlogbeat_install_root }}\{{ winlogbeat_extract_folder }}'
+    $link = '{{ winlogbeat_install_path }}'
+    New-Item -Path $link -ItemType Junction -Target $target -Force
+  when: _winlogbeat_installed != winlogbeat_version
+  changed_when: true
+
+- name: Uninstall old Winlogbeat Windows service (using backup script)
+  ansible.windows.win_shell: |
+    & "{{ winlogbeat_backup_path }}\{{ _winlogbeat_installed }}\uninstall-service-winlogbeat.ps1"
+  when:
+    - _wb_stopped is defined
+    - _wb_stopped.changed
+  changed_when: true
+  ignore_errors: true
+
+- name: Install Winlogbeat as Windows service
+  ansible.windows.win_shell: |
+    & "{{ winlogbeat_install_path }}\install-service-winlogbeat.ps1"
+  when:
+    - not _wb_current_binary.stat.exists or _winlogbeat_installed != winlogbeat_version
+  register: _wb_install
+  changed_when: true
+  notify: restart winlogbeat
+
+- name: Cleanup old Winlogbeat installations after upgrade
+  ansible.windows.win_shell: |
+    $ErrorActionPreference = 'Stop'
+    $installRoot = '{{ winlogbeat_install_root }}'
+    $backupRoot = '{{ winlogbeat_backup_path }}'
+    $retain = {{ winlogbeat_retention_versions }}
+    $removed = 0
+
+    $versionDirs = @()
+    if (Test-Path -LiteralPath $installRoot) {
+      $versionDirs = Get-ChildItem -LiteralPath $installRoot -Directory -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -match '^winlogbeat-(?<Version>\d+\.\d+\.\d+)-windows-x86_64$' } |
+        ForEach-Object {
+          [PSCustomObject]@{
+            Path = $_.FullName
+            Version = [version]$Matches.Version
+            Name = $_.Name
+          }
+        } |
+        Sort-Object Version -Descending
+    }
+
+    $versionDirs | Select-Object -Skip $retain | ForEach-Object {
+      Remove-Item -LiteralPath $_.Path -Recurse -Force
+      $removed++
+      Write-Host "Removed old extracted installation: $($_.Name)"
+    }
+
+    if (Test-Path -LiteralPath $backupRoot) {
+      Get-ChildItem -LiteralPath $backupRoot -Directory -ErrorAction SilentlyContinue |
+        Where-Object { $_.Name -match '^\d+\.\d+\.\d+$' } |
+        ForEach-Object {
+          [PSCustomObject]@{
+            Path = $_.FullName
+            Version = [version]$_.Name
+            Name = $_.Name
+          }
+        } |
+        Sort-Object Version -Descending |
+        Select-Object -Skip $retain |
+        ForEach-Object {
+          Remove-Item -LiteralPath $_.Path -Recurse -Force
+          $removed++
+          Write-Host "Removed old backup installation: $($_.Name)"
+        }
+    }
+
+    Write-Host "removed=$removed"
+  when:
+    - _wb_current_binary.stat.exists
+    - _winlogbeat_installed != winlogbeat_version
+  register: _wb_cleanup
+  changed_when: "'removed=0' not in _wb_cleanup.stdout"
+...
