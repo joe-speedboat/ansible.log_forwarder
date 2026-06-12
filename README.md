@@ -328,13 +328,39 @@ Get-Content 'C:\Program Files\Winlogbeat\current\winlogbeat.yml'
 
 After enabling **«Do not add Beats type as prefix»** on the Graylog Beats input, all fields arrive without the `winlogbeat_` prefix (e.g. `agent_hostname`, not `winlogbeat_agent_hostname`).
 
+All events include the `journal_forwarder:true` marker field, usable as a portable discriminator across OS families.
+
 | Source | Query |
 |---|---|
-| journald | `source:<host> AND log_type:journald` |
-| Audit (Rocky) | `source:<host> AND log_type:auditd AND package_action:*` |
-| Audit (Ubuntu) | `source:<host> AND log_type:auditd AND (package_action:install OR package_action:remove)` |
-| auth/secure | `source:<host> AND log_type:security_file` |
+| journald (generic) | `source:<host> AND log_type:journald` |
+| SSH login/logout | `source:<host> AND auth_service:sshd AND _exists_:auth_session_state` |
+| sudo command execution | `source:<host> AND _exists_:sudo_command` |
+| su session | `source:<host> AND auth_service:su* AND _exists_:auth_session_state` |
+| Package (all OS) | `source:<host> AND log_type:auditd AND package_action:*` |
+| Package (Rocky/RHEL) | `source:<host> AND audit_type:SOFTWARE_UPDATE AND package_action:*` |
+| Package (Ubuntu) | `source:<host> AND log_type:auditd AND (package_action:install OR package_action:remove)` |
+| auth.log / secure | `source:<host> AND log_type:security_file` |
 | Windows Events | `source:<host> AND winlog_channel:Security AND log_type:winlogbeat` |
+
+**Cross-OS notes**:
+
+- **Package events** — Rocky/RHEL produces native `audit_type=SOFTWARE_UPDATE` records with `op=install\|remove\|update`, `sw="<pkg>-<version>"`. Ubuntu produces `audit_type=EXECVE` records from `apt-get`/`dpkg` with `package_action` and `package_name`. Both OS families normalize to the same `package_action`/`package_name` fields, so the portable query `log_type:auditd AND package_action:*` works everywhere.
+
+- **su sessions** — `su -` logs as `auth_service=su-l`. Use `auth_service:su*` (wildcard) for portable matching across login and non-login su sessions.
+
+**Representative parsed fields**:
+
+| Field | Example (Rocky) | Example (Ubuntu) |
+|---|---|---|
+| `auth_service` | `sshd` | `sshd` |
+| `auth_user` | `root` | `root` |
+| `auth_session_state` | `opened` / `closed` | `opened` / `closed` |
+| `auth_actor` | `jfuser` | `jfuser` |
+| `sudo_command` | `/usr/bin/id` | `/usr/bin/id` |
+| `package_action` | `install` / `remove` / `update` | `install` / `remove` / `upgrade` |
+| `package_name` | `tree-2.1.0-8.el10.x86_64` | `tree` (apt-get) or `tree:amd64` (dpkg) |
+| `audit_type` | `SOFTWARE_UPDATE` | `EXECVE` |
+| `result` | `success` | `success` |
 
 ---
 
