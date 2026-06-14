@@ -261,7 +261,7 @@ The template dispatcher (`main.yml` + `include-file.yml`) discovers numbered tas
 
 | Template | Destination | Purpose |
 |---|---|---|
-| `fluent-bit-logbeat.conf.j2` | `/etc/fluent-bit/fluent-bit.conf` | Fluent Bit main config: systemd/tail inputs, auth/sudo parsers, GELF output |
+| `fluent-bit-logbeat.conf.j2` | `/etc/fluent-bit/fluent-bit.conf` | Fluent Bit main config: systemd/tail inputs, auth/sudo parsers, GELF output. Sets `hostname` via Fluent Bit's built-in `${HOSTNAME}` variable — all three log sources (journald, auditd, security_file) produce the same `source` in Graylog, and hostname changes are picked up after a Fluent Bit restart |
 | `parsers-logbeat-forwarder.conf.j2` | `/etc/fluent-bit/parsers-logbeat-forwarder.conf` | Regex parsers: audit_raw, audit_package_fields, auth_sshd, auth_pam, sudo |
 | `audit-package.rules.j2` | `/etc/audit/rules.d/logbeat-package.rules` | Audit rules for package-change monitoring (per OS family) |
 | `winlogbeat.yml.j2` | `{{ winlogbeat_install_path }}\winlogbeat.yml` | Winlogbeat config: event log inputs, Beats output, field injection |
@@ -332,6 +332,12 @@ Get-Content 'C:\Program Files\Winlogbeat\current\winlogbeat.yml'
 After enabling **«Do not add Beats type as prefix»** on the Graylog Beats input, all fields arrive without the `winlogbeat_` prefix (e.g. `agent_hostname`, not `winlogbeat_agent_hostname`).
 
 All events include the `journal_forwarder:true` marker field, usable as a portable discriminator across OS families.
+
+The Graylog `source` field is set consistently across all Linux log types (journald, auditd, security_file) using Fluent Bit's `Gelf_Host_Key` with the `${HOSTNAME}` built-in variable. This ensures:
+
+- **Same source value** for all log types from the same host — no mix of short hostname and FQDN
+- **Dynamic hostname pickup** — if the host is renamed, a Fluent Bit restart (`systemctl restart fluent-bit`) updates the source without re-deploying Ansible
+- **Cross-OS consistency** — short hostname on all OS families (Ubuntu, Rocky/RHEL/Alma)
 
 | Source | Query |
 |---|---|
