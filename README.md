@@ -190,6 +190,40 @@ winlogbeat_event_log_groups:
 
 Rendered Winlogbeat entries default to `ignore_missing_channel: true` unless a channel explicitly overrides it. Ansible still reports missing selected channels during deployment, but missing optional/vendor channels do not break the service.
 
+#### Checking missing Windows Event Log channels
+
+The role only reports missing channels that are part of the **effective Winlogbeat configuration**. It does not compare against every possible built-in group.
+
+If you override `winlogbeat_event_log_group_definitions`, Ansible replaces the complete group definition map. For example, this diagnostic override configures only `Application` for the `baseline` group and removes the built-in `powershell` and `task_scheduler` group definitions from the effective map:
+
+```yaml
+vars:
+  winlogbeat_event_log_group_definitions:
+    baseline:
+      - name: Application
+```
+
+With that input, the role can only check/report `Application`. It will not report `System`, `Security`, PowerShell, or Task Scheduler as missing because they are no longer selected.
+
+To test whether specific channels are available on a host, use `winlogbeat_event_logs` as an explicit checklist instead:
+
+```yaml
+vars:
+  winlogbeat_graylog_host: graylog1.sun.bitbull.ch
+  winlogbeat_graylog_port: 5044
+  winlogbeat_event_logs:
+    - name: Application
+    - name: System
+    - name: Security
+    - name: Microsoft-Windows-PowerShell/Operational
+    - name: Windows PowerShell
+    - name: Microsoft-Windows-TaskScheduler/Operational
+    - name: Microsoft-Windows-TerminalServices-RemoteConnectionManager/Operational
+    - name: Microsoft-FSLogix-Apps/Operational
+```
+
+During deployment, the role prints a `Missing Winlogbeat event channels` debug message only when at least one selected channel is absent. If no message appears, all selected channels were found.
+
 Use `ignore_missing_channel: false` only when a channel is mandatory for a host class. Example: if all RDS hosts must have the RemoteConnectionManager log, override the event list explicitly:
 
 ```yaml
