@@ -403,13 +403,13 @@ Upgrade workflow:
 ## Installation
 
 ```bash
-git clone https://github.com/joe-speedboat/ansible.log_forwarder.git /etc/ansible/roles/joe-speedboat.log_forwarder
+git clone https://github.com/joe-speedboat/ansible.winlogbeat_forwarder.git /etc/ansible/roles/joe-speedboat.log_forwarder
 ```
 
 Or via Galaxy (once published):
 
 ```bash
-ansible-galaxy role install joe-speedboat.log_forwarder
+ansible-galaxy role install joe-speedboat.winlogbeat_forwarder
 ```
 
 ---
