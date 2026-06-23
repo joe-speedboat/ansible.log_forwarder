@@ -91,38 +91,4 @@ winlogbeat_tags: []
 # winlogbeat_fields:
 #   env: production
 #   datacenter: ch-flawil
-
-# Linux logging via Fluent Bit -> Graylog GELF
-log_forwarder_linux_install: true
-log_forwarder_remove_repo: true  # remove Fluent Bit repo on uninstall
-
-# Graylog GELF input (Linux)
-log_forwarder_graylog_gelf_host: graylog.example.com
-log_forwarder_graylog_gelf_port: 12201
-log_forwarder_graylog_gelf_mode: tcp
-
-# Fluent Bit runtime
-log_forwarder_fluent_bit_workers: 2
-log_forwarder_journal_tag: journald
-log_forwarder_read_from_tail: true
-log_forwarder_storage_path: /var/lib/fluent-bit
-log_forwarder_systemd_db: "{{ log_forwarder_storage_path }}/flb_systemd.db"
-
-# Audit log forwarding (Linux)
-log_forwarder_audit_enabled: true
-log_forwarder_audit_remove: true  # remove audit packages on uninstall
-log_forwarder_audit_tag: audit
-log_forwarder_audit_db: "{{ log_forwarder_storage_path }}/flb_audit.db"
-log_forwarder_audit_rules_file: /etc/audit/rules.d/logbeat-package.rules
-
-# Additional Linux security/application log files
-log_forwarder_security_files_enabled: true
-log_forwarder_security_files_tag: security_files
-log_forwarder_security_files_db: "{{ log_forwarder_storage_path }}/flb_security_files.db"
-log_forwarder_security_log_paths:
-  - /var/log/auth.log
-  - /var/log/secure
-  - /var/log/nginx/*.log
-  - /var/log/apache2/*.log
-  - /var/log/httpd/*.log
 ...

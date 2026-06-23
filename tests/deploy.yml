@@ -8,14 +8,4 @@
       vars:
         winlogbeat_graylog_host: graylog.example.com
         winlogbeat_graylog_port: 5044
-
-- name: Deploy Linux logs -> Graylog
-  hosts: linux
-  gather_facts: true
-
-  roles:
-    - role: joe-speedboat.log_forwarder
-      vars:
-        log_forwarder_graylog_gelf_host: graylog.example.com
-        log_forwarder_graylog_gelf_port: 12201
 ...

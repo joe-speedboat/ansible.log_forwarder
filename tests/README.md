@@ -19,24 +19,12 @@ ANSIBLE_ROLES_PATH=/tmp/log-forwarder-harness/roles \
 
 The `ansible.winlogbeat_forwarder` or checkout-basename symlink covers runs where Ansible resolves `role_path|basename` to the repository directory instead of the Galaxy role name.
 
-For a full Linux matrix, use fresh lab VMs for Ubuntu 24/26 and Rocky 8/9/10. Rocky 8 needs Python 3.9 bootstrapped before normal modules when the control node uses modern Ansible:
+Always verify beyond a green play recap on Windows targets:
 
-```bash
-ansible -i inventory.ini rocky8 -m raw -a 'dnf -y module enable python39 && dnf -y install python39'
+```powershell
+Get-Service winlogbeat
+& "C:\Program Files\Winlogbeat\current\winlogbeat.exe" test config -c "C:\Program Files\Winlogbeat\current\winlogbeat.yml" -e
+Get-Content "C:\Program Files\Winlogbeat\current\winlogbeat.yml" -TotalCount 40
 ```
 
-If lab DNS is stale or missing for newly-created VMs, keep the inventory aliases as the actual hostnames but pin `ansible_host=<ip>` after verifying the IP by SSH. This was required during the 2026-06-15 fresh Linux matrix run.
-
-Always verify beyond a green play recap:
-
-```bash
-ansible -i inventory.ini linux -m shell -a '
-  systemctl is-enabled fluent-bit
-  systemctl is-active fluent-bit
-  systemctl is-active auditd
-  fluent-bit -c /etc/fluent-bit/fluent-bit.conf --dry-run
-  grep -n "Add     hostname" /etc/fluent-bit/fluent-bit.conf
-  grep -n "Gelf_Host_Key" /etc/fluent-bit/fluent-bit.conf
-  auditctl -l | grep package_change
-'
-```
+Generate a marker event and verify it arrives in Graylog before claiming end-to-end success.
