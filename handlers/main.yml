@@ -1,5 +1,5 @@
 ---
-# handlers/main.yml - service lifecycle handlers
+# handlers/main.yml - Winlogbeat service lifecycle handlers
 
 - name: restart winlogbeat
   ansible.windows.win_service:
@@ -16,20 +16,4 @@
   when:
     - not ansible_check_mode
     - ansible_os_family == 'Windows'
-
-- name: restart fluent-bit
-  ansible.builtin.systemd:
-    name: fluent-bit
-    state: restarted
-  when:
-    - not ansible_check_mode
-    - ansible_os_family != 'Windows'
-
-- name: reload audit rules
-  ansible.builtin.command: augenrules --load
-  changed_when: true
-  ignore_errors: true
-  when:
-    - not ansible_check_mode
-    - ansible_os_family != 'Windows'
 ...
