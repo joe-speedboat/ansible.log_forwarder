@@ -2,7 +2,9 @@
 
 ## [Unreleased]
 
-No unreleased changes.
+### Changed
+
+- Remove the redundant compact missing-channel report because the full channel coverage report already marks configured paths as `missing`.
 
 ## [v1.1.0] - 2026-06-29
 
