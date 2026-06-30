@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+No unreleased changes.
+
+## [v1.1.1] - 2026-06-30
+
 ### Changed
 
 - Add all non-zero unforwarded production channels from the latest coverage output into curated default event-log groups.
