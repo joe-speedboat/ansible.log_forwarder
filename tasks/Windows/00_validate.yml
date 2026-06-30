@@ -126,15 +126,6 @@
     - winlogbeat_validate_event_channels | bool
     - winlogbeat_report_unforwarded_event_channels | bool
 
-- name: Report missing Winlogbeat event channels
-  ansible.builtin.debug:
-    msg:
-      - "Missing Winlogbeat event channels on {{ inventory_hostname }}:"
-      - "{{ winlogbeat_missing_event_channels }}"
-  when:
-    - winlogbeat_validate_event_channels | bool
-    - winlogbeat_missing_event_channels | length > 0
-
 - name: Report Windows Event Log channel coverage
   ansible.builtin.debug:
     msg:
